@@ -1,12 +1,23 @@
 from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import os
 import tempfile
+from fastapi.middleware.cors import CORSMiddleware
 import httpx
-from model import interact_with_toaster
+from model import interact_with_toaster, text_to_speech, eleven_tts
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# CORS - Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Define the router
 router = APIRouter()
@@ -25,29 +36,26 @@ async def upload_audio(file: UploadFile = File(...)):
         file (UploadFile): The uploaded audio file.
 
     Returns:
-        dict: A JSON response containing a message or an error.
+        dict: A JSON response containing a message and audio file.
     """
     try:
         # Check file content type and extension
         if file.content_type == 'audio/wav' and file.filename.endswith('.wav'):
-            # Create a temporary file
+            # Create a temporary file for the uploaded audio
             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
                 temp_file_path = temp_file.name
-                # Write uploaded file contents to the temporary file
                 temp_file.write(await file.read())
 
             # Pass the temp file path to your processing function
             print(f"Processing file: {temp_file_path}")
             reply = interact_with_toaster(temp_file_path)
+            print(reply)
 
-            # Optionally, clean up the temporary file after processing
-            os.remove(temp_file_path)
+            # Generate TTS audio from the reply
+            
 
-            # Extract the command from the reply
+            # Perform actions based on the command (e.g., power on/off)
             command = reply.get("command", "unknown")
-            print(f"Command received: {command}")
-
-            # Perform the corresponding action based on the command
             async with httpx.AsyncClient() as client:
                 if command == "on":
                     response = await client.get(POWER_ON_URL)
@@ -56,8 +64,15 @@ async def upload_audio(file: UploadFile = File(...)):
                     response = await client.get(POWER_OFF_URL)
                     print(f"Power Off Response: {response.text}")
 
-            # Return the reply message
-            return JSONResponse(content={"message": reply.get("audio_response", "No audio response provided.")})
+            # Clean up the temporary input file
+            os.remove(temp_file_path)
+
+            text_to_speech(reply.get("audio_response", ""),"output.wav")
+            #eleven_tts(reply.get("audio_response", ""))
+
+            # Return the generated audio file
+            return FileResponse("output.wav", media_type="audio/wav", filename="output.wav")
+
         else:
             raise HTTPException(
                 status_code=400,

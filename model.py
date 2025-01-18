@@ -1,9 +1,11 @@
-
 import os
 from dotenv import load_dotenv
 import json
 import logging
+import requests
 from openai import OpenAI
+from elevenlabs import save
+from elevenlabs.client import ElevenLabs
 
 # Load environment variables
 load_dotenv()
@@ -55,20 +57,15 @@ def interact_with_toaster(audio_file:str) -> dict:
             "content": [
                 {
                     "type": "text",
-                    "text": (
-                        "As an AI-powered funny toaster, respond to users who interact with you to control the toasting functions.\n\n"
-                        "Use humor and playful language to entertain while assisting the user with various toasting commands.\n\n"
-                        "# Steps\n\n"
-                        "1. **Greeting**: Start with a friendly and humorous greeting.\n"
-                        "2. **Understand the Command**: Identify and understand the user's request regarding toasting settings or functions.\n"
-                        "3. **Respond**: Use humor or a funny analogy while confirming the action or providing information.\n"
-                        "4. **Provide Options**: If applicable, offer additional settings or options in a light-hearted manner.\n"
-                        "5. **Confirm**: Reassure the user that their command has been or will be executed.\n\n"
-                        "# Output Format\n\n"
-                        "- Use a conversational format.\n"
-                        "- Responses should be a few sentences long, maintaining a balance between humor and clarity.\n"
-                        "- Conclude with a confirmation of the action.\n"
-                    )
+                    "text": 
+                        """
+                        You are Toaster-Chan, a funny and cheeky toaster controller with the persona of a Singlish-speaking uncle inspired by Phua Chu Kang. Your role is to assist the user (a Singaporean) with controlling a toaster. Based on the user’s input, you will perform one of three actions:
+
+                        ON the toaster: Respond with humor and acknowledge the request to turn on the toaster.
+                        OFF the toaster: Provide a playful and lighthearted response confirming the toaster is turned off.
+                        UNKNOWN command: If the user’s input is unclear, respond with a humorous, teasing remark while asking them to try again.
+                        Always respond in Singlish, adding witty, uncle-like comments full of personality. Make the conversation lively, engaging, and distinctly Singaporean. Remember, humor is your strongest suit, and your tone should feel like chatting with a lovable, dramatic, and slightly naggy Singaporean uncle.
+                        """
                 }
             ]
         },
@@ -86,7 +83,7 @@ def interact_with_toaster(audio_file:str) -> dict:
     # Call the OpenAI API
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="ft:gpt-4o-mini-2024-07-18:chingu:hack-n-roll:Ar86apV1",
             messages=messages,
             response_format={
                 "type": "json_schema",
@@ -98,7 +95,7 @@ def interact_with_toaster(audio_file:str) -> dict:
                         "properties": {
                             "audio_response": {
                                 "type": "string",
-                                "description": "The audio response associated with the toaster command."
+                                "description": "The response that uncle-chan will deliver"
                             },
                             "command": {
                                 "type": "string",
@@ -123,4 +120,55 @@ def interact_with_toaster(audio_file:str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-#print(interact_with_toaster("test5.wav"))
+def text_to_speech(text: str, filename: str, voice: str = 'Wing-Yi') -> None:
+    """
+    Convert text to speech using Narakeet API and save it as an audio file.
+    
+    Parameters:
+        text (str): The text to be converted to speech.
+        filename (str): The name of the file to save the audio.
+        voice (str): The voice to use for the speech synthesis. Default is 'Seo-Yeon'.
+    """
+    url = f'https://api.narakeet.com/text-to-speech/m4a?voice={voice}'
+    headers = {
+        'Accept': 'application/octet-stream',
+        'Content-Type': 'text/plain',
+        'x-api-key': 'wkA2YLPyxy24vOiztNKOA26bOFgPyH91745BixBe',
+    }
+    
+    try:
+        logging.info(f"Converting text to speech with Narakeet: {text[:30]}...")  # Log first 30 characters of text
+        response = requests.post(url, headers=headers, data=text.encode('utf8'))
+        response.raise_for_status()  # Raise an error for bad status codes
+        
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+        logging.info(f"Audio file saved as {filename}")
+        
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to convert text to speech: {e}")
+        raise
+
+
+
+
+elev = ElevenLabs(
+  api_key=os.getenv("ELEVEN_LABS"), # Defaults to ELEVEN_API_KEY or ELEVENLABS_API_KEY
+)
+
+
+def eleven_tts(text):
+    """
+    Generate speech from text and save the audio to a file.
+    
+    Args:
+        text (str): The text to convert to speech.
+        output_file (str): Path to save the audio file.
+    """
+    # Generate the audio using ElevenLabs API
+    audio = elev.generate(
+        text=text,
+        voice="mbL34QDB5FptPamlgvX5",
+        model="eleven_multilingual_v2"
+    )
+    save(audio, "output.wav")
