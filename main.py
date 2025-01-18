@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-#from model import interact_with_toaster
+from model import interact_with_toaster
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -25,7 +25,7 @@ async def upload_audio(file: UploadFile = File(...)):
         # Check file content type
         if file.content_type == 'audio/wav':
             # Placeholder for additional processing
-            reply = "hello"
+            reply = interact_with_toaster(file.filename)
             return JSONResponse(content={"message": reply})
         else:
             raise HTTPException(status_code=400, detail="Invalid file type. Only 'audio/wav' is supported.")

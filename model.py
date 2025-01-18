@@ -122,4 +122,4 @@ def interact_with_toaster(audio_file:str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-# print(interact_with_toaster("test5.wav"))
+print(interact_with_toaster("test5.wav"))
