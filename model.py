@@ -1,8 +1,9 @@
-from openai import OpenAI
+
 import os
 from dotenv import load_dotenv
 import json
 import logging
+from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
@@ -122,4 +123,4 @@ def interact_with_toaster(audio_file:str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-# print(interact_with_toaster("test5.wav"))
+#print(interact_with_toaster("test5.wav"))
