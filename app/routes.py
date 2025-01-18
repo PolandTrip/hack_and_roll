@@ -1,13 +1,14 @@
-from fastapi import File, UploadFile, Router, HTTPException
+from fastapi import File, UploadFile, APIRouter, HTTPException
 from models.ai import interact_with_toaster
 
-router = Router()
+router = APIRouter()
 
 async def upload_audio(file: UploadFile = File(...)):
     if file.content_type in ['audio/wav']:
-        reply = interact_with_toaster(file.filename)
-        return reply
-    raise HTTPException(status_code=400, detail='Invalid File Type')
+        raise HTTPException(status_code=400, detail='Invalid File Type')
+
+    reply = interact_with_toaster(file.filename)
+    return reply
     
     
     
