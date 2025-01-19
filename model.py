@@ -80,7 +80,6 @@ def interact_with_toaster(audio_file:str) -> dict:
         }
     ]
 
-    # Call the OpenAI API
     try:
         response = client.chat.completions.create(
             model="ft:gpt-4o-mini-2024-07-18:chingu:hack-n-roll:Ar86apV1",
@@ -153,7 +152,7 @@ def text_to_speech(text: str, filename: str, voice: str = 'Wing-Yi') -> None:
 
 
 elev = ElevenLabs(
-  api_key=os.getenv("ELEVEN_LABS"), # Defaults to ELEVEN_API_KEY or ELEVENLABS_API_KEY
+  api_key=os.getenv("ELEVEN_LABS"),
 )
 
 
