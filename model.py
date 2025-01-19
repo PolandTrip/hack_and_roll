@@ -212,4 +212,4 @@ def eleven_tts(text):
         model="eleven_multilingual_v2"
     )
     save(audio, "temp_audio.wav")
-    adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=4, speed_factor=1)
+    adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=2, speed_factor=1)

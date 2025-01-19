@@ -19,8 +19,8 @@ app.add_middleware(
 router = APIRouter()
 
 # Define the device control URLs
-POWER_ON_URL = "http://192.168.1.27/cm?cmnd=Power%20On"
-POWER_OFF_URL = "http://192.168.1.27/cm?cmnd=Power%20Off"
+POWER_ON_URL = "http://172.20.10.2/cm?cmnd=Power%20On"
+POWER_OFF_URL = "http://172.20.10.2/cm?cmnd=Power%20Off"
 
 
 @router.post("/upload-audio")
@@ -52,13 +52,13 @@ async def upload_audio(file: UploadFile = File(...)):
 
             # Perform actions based on the command (e.g., power on/off)
             command = reply.get("command", "unknown")
-            # async with httpx.AsyncClient() as client:
-            #     if command == "on":
-            #         response = await client.get(POWER_ON_URL)
-            #         print(f"Power On Response: {response.text}")
-            #     elif command == "off":
-            #         response = await client.get(POWER_OFF_URL)
-            #         print(f"Power Off Response: {response.text}")
+            async with httpx.AsyncClient() as client:
+                 if command == "on":
+                     response = await client.get(POWER_ON_URL)
+                     print(f"Power On Response: {response.text}")
+                 elif command == "off":
+                     response = await client.get(POWER_OFF_URL)
+                     print(f"Power Off Response: {response.text}")
 
             # Clean up the temporary input file
             os.remove(temp_file_path)
