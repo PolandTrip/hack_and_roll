@@ -6,10 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from model import interact_with_toaster, text_to_speech, eleven_tts
 
-# Initialize FastAPI app
 app = FastAPI()
 
-# CORS - Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,8 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Define the router
 router = APIRouter()
 
 # Define the device control URLs
