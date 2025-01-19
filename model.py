@@ -4,6 +4,8 @@ import json
 import logging
 import requests
 from openai import OpenAI
+from pydub import AudioSegment
+from pydub.playback import play
 from elevenlabs import save
 from elevenlabs.client import ElevenLabs
 
@@ -65,6 +67,22 @@ def interact_with_toaster(audio_file:str) -> dict:
                         OFF the toaster: Provide a playful and lighthearted response confirming the toaster is turned off.
                         UNKNOWN command: If the user’s input is unclear, respond with a humorous, teasing remark while asking them to try again.
                         Always respond in Singlish, adding witty, uncle-like comments full of personality. Make the conversation lively, engaging, and distinctly Singaporean. Remember, humor is your strongest suit, and your tone should feel like chatting with a lovable, dramatic, and slightly naggy Singaporean uncle.
+                        
+                        Examples of Uncle Chan:
+
+                        ON the toaster:
+                        "Aiyoh, you finally know how to use me ah? Don’t worry, I’ll on it now. Toasting so easy, even my ah ma can do it!"
+                        "Ok lah, ok lah, I on for you. Next time call me Toaster CEO, can?"
+                        OFF the toaster:
+                        "Eh, off ah? Aiyah, you sure you don’t want more toast ah? Later hungry, don’t come cry to me hor!"
+                        "Wah lau, I just on only leh, now you say off. You think I energy-saving ah?"
+                        "Ok, I off liao. But hor, don’t blame me if your bread not crispy crispy enough, ok?"
+                        UNKNOWN command:
+                        "Aiyoh, what you talking ah? My grandma’s chicken rice recipe easier to understand leh!"
+                        "Eh, you drunk ah? This command don’t make sense leh. You want toast or not?"
+                        "Sorry ah, Toaster-Chan is smart but not psychic leh. Try again, can?"
+                        Dont use the same example more than once
+
                         """
                 }
             ]
@@ -109,7 +127,7 @@ def interact_with_toaster(audio_file:str) -> dict:
             },
             temperature=1,
             top_p=1,
-            frequency_penalty=0,
+            frequency_penalty=1,
             presence_penalty=0
         )
 
@@ -149,7 +167,30 @@ def text_to_speech(text: str, filename: str, voice: str = 'Wing-Yi') -> None:
         raise
 
 
+def adjust_audio_pitch_and_speed(audio_file, output_file, pitch_semitones=0, speed_factor=1.0):
+    """
+    Adjust the pitch and speed of an audio file.
 
+    Args:
+        audio_file (str): Path to the input audio file.
+        output_file (str): Path to save the modified audio.
+        pitch_semitones (int): Number of semitones to adjust pitch (-12 to +12).
+        speed_factor (float): Speed adjustment factor (>1.0 = faster, <1.0 = slower).
+    """
+    audio = AudioSegment.from_file(audio_file)
+
+    # Adjust pitch by changing frame rate
+    if pitch_semitones != 0:
+        new_sample_rate = int(audio.frame_rate * (2 ** (pitch_semitones / 12)))
+        audio = audio._spawn(audio.raw_data, overrides={"frame_rate": new_sample_rate}).set_frame_rate(audio.frame_rate)
+
+    # Adjust speed
+    if speed_factor != 1.0:
+        audio = audio.speedup(playback_speed=speed_factor)
+
+    # Export the modified audio
+    audio.export(output_file, format="wav")
+    print(f"Modified audio saved to {output_file}")
 
 elev = ElevenLabs(
   api_key=os.getenv("ELEVEN_LABS"),
@@ -167,7 +208,8 @@ def eleven_tts(text):
     # Generate the audio using ElevenLabs API
     audio = elev.generate(
         text=text,
-        voice="mbL34QDB5FptPamlgvX5",
+        voice="x959FyxFeswkQQqFjoPb",
         model="eleven_multilingual_v2"
     )
-    save(audio, "output.wav")
+    save(audio, "temp_audio.wav")
+    adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=4, speed_factor=1)

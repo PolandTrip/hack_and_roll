@@ -52,19 +52,19 @@ async def upload_audio(file: UploadFile = File(...)):
 
             # Perform actions based on the command (e.g., power on/off)
             command = reply.get("command", "unknown")
-            async with httpx.AsyncClient() as client:
-                if command == "on":
-                    response = await client.get(POWER_ON_URL)
-                    print(f"Power On Response: {response.text}")
-                elif command == "off":
-                    response = await client.get(POWER_OFF_URL)
-                    print(f"Power Off Response: {response.text}")
+            # async with httpx.AsyncClient() as client:
+            #     if command == "on":
+            #         response = await client.get(POWER_ON_URL)
+            #         print(f"Power On Response: {response.text}")
+            #     elif command == "off":
+            #         response = await client.get(POWER_OFF_URL)
+            #         print(f"Power Off Response: {response.text}")
 
             # Clean up the temporary input file
             os.remove(temp_file_path)
 
-            text_to_speech(reply.get("audio_response", ""),"output.wav")
-            #eleven_tts(reply.get("audio_response", ""))
+            #text_to_speech(reply.get("audio_response", ""),"output.wav")
+            eleven_tts(reply.get("audio_response", ""))
 
             # Return the generated audio file
             return FileResponse("output.wav", media_type="audio/wav", filename="output.wav")
