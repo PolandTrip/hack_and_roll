@@ -5,6 +5,8 @@ import tempfile
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from model import interact_with_toaster, text_to_speech, eleven_tts
+import base64
+
 
 app = FastAPI()
 
@@ -66,14 +68,20 @@ async def upload_audio(file: UploadFile = File(...)):
             #text_to_speech(reply.get("audio_response", ""),"output.wav")
             eleven_tts(reply.get("audio_response", ""))
 
-            # Return the generated audio file
-            return FileResponse("output.wav", media_type="audio/wav", filename="output.wav")
+            # Read and encode the audio file
+            # Read and encode the audio file
+            with open("output.wav", "rb") as audio_file:
+                audio_base64 = base64.b64encode(audio_file.read()).decode("utf-8")
 
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid file type. Only '.wav' files with content type 'audio/wav' are supported."
-            )
+            # Return the text and base64-encoded audio in JSON
+            return JSONResponse({
+                "message": reply.get("audio_response", ""),
+                "command": command,
+                "audio_base64": audio_base64
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
