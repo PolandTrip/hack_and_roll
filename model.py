@@ -117,7 +117,7 @@ def interact_with_toaster(audio_file:str) -> dict:
                             "command": {
                                 "type": "string",
                                 "description": "The command to control the toaster.",
-                                "enum": ["on", "off", "unknown"]
+                                "enum": ["on", "off"]
                             }
                         },
                         "required": ["audio_response", "command"],
@@ -211,5 +211,5 @@ def eleven_tts(text):
         voice="x959FyxFeswkQQqFjoPb",
         model="eleven_multilingual_v2"
     )
-    save(audio, "temp_audio.wav")
-    adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=2, speed_factor=1)
+    save(audio, "output.wav")
+    #adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=2, speed_factor=1)

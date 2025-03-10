@@ -1,15 +1,15 @@
 from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import tempfile
-from fastapi.middleware.cors import CORSMiddleware
 import httpx
-from model import interact_with_toaster, text_to_speech, eleven_tts
 import base64
-
+from model import interact_with_toaster, eleven_tts
 
 app = FastAPI()
 
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,70 +20,55 @@ app.add_middleware(
 
 router = APIRouter()
 
-# Define the device control URLs
-POWER_ON_URL = "http://172.20.10.2/cm?cmnd=Power%20On"
-POWER_OFF_URL = "http://172.20.10.2/cm?cmnd=Power%20Off"
+# Device control URLs
+DEVICE_URLS = {
+    "on": "http://172.20.10.2/cm?cmnd=Power%20On",
+    "off": "http://172.20.10.2/cm?cmnd=Power%20Off",
+}
 
 
 @router.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...)):
-    """
-    Endpoint to upload and process audio files.
+    """Upload and process an audio file."""
+    if file.content_type != "audio/wav" or not file.filename.endswith(".wav"):
+        raise HTTPException(status_code=400, detail="Only .wav audio files are supported.")
 
-    Args:
-        file (UploadFile): The uploaded audio file.
-
-    Returns:
-        dict: A JSON response containing a message and audio file.
-    """
     try:
-        # Check file content type and extension
-        if file.content_type == 'audio/wav' and file.filename.endswith('.wav'):
-            # Create a temporary file for the uploaded audio
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-                temp_file_path = temp_file.name
-                temp_file.write(await file.read())
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+            temp_file_path = temp_file.name
+            temp_file.write(await file.read())
 
-            # Pass the temp file path to your processing function
-            print(f"Processing file: {temp_file_path}")
-            reply = interact_with_toaster(temp_file_path)
-            print(reply)
+        # Process the uploaded file
+        reply = interact_with_toaster(temp_file_path)
 
-            # Generate TTS audio from the reply
-            
+        # Generate TTS response
+        audio_response = reply.get("audio_response", "")
+        eleven_tts(audio_response)
 
-            # Perform actions based on the command (e.g., power on/off)
-            command = reply.get("command", "unknown")
-            async with httpx.AsyncClient() as client:
-                 if command == "on":
-                     response = await client.get(POWER_ON_URL)
-                     print(f"Power On Response: {response.text}")
-                 elif command == "off":
-                     response = await client.get(POWER_OFF_URL)
-                     print(f"Power Off Response: {response.text}")
+        # Read generated audio file
+        with open("output.wav", "rb") as audio_file:
+            audio_base64 = base64.b64encode(audio_file.read()).decode("utf-8")
 
-            # Clean up the temporary input file
-            os.remove(temp_file_path)
+        os.remove(temp_file_path)  # Clean up temporary file
 
-            #text_to_speech(reply.get("audio_response", ""),"output.wav")
-            eleven_tts(reply.get("audio_response", ""))
+        # Execute device control command
+        command = reply.get("command")
+        if command in DEVICE_URLS:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(DEVICE_URLS[command])
+                    print(f"Device {command} Response: {response.text}")
+            except httpx.HTTPError as e:
+                print(f"Failed to execute device command: {e}")
 
-            # Read and encode the audio file
-            # Read and encode the audio file
-            with open("output.wav", "rb") as audio_file:
-                audio_base64 = base64.b64encode(audio_file.read()).decode("utf-8")
-
-            # Return the text and base64-encoded audio in JSON
-            return JSONResponse({
-                "message": reply.get("audio_response", ""),
-                "command": command,
-                "audio_base64": audio_base64
-            })
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse({
+            "message": audio_response,
+            "command": command,
+            "audio_base64": audio_base64
+        })
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Include the router
 app.include_router(router, prefix="/api", tags=["Audio"])
