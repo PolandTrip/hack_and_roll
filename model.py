@@ -6,7 +6,7 @@ import requests
 from openai import OpenAI
 from pydub import AudioSegment
 from pydub.playback import play
-from elevenlabs import save
+from elevenlabs import save, Voice, VoiceSettings
 from elevenlabs.client import ElevenLabs
 
 # Load environment variables
@@ -193,8 +193,17 @@ def adjust_audio_pitch_and_speed(audio_file, output_file, pitch_semitones=0, spe
     print(f"Modified audio saved to {output_file}")
 
 elev = ElevenLabs(
-  api_key=os.getenv("ELEVEN_LABS"),
+  api_key="sk_630352530c31cae8a37bc586889a3d99526c9207f550798c",
 )
+
+voice_settings = VoiceSettings(
+    stability=0.5,          # Adjusts the emotional range; lower values introduce more emotion.
+    similarity_boost=0.8,   # Determines adherence to the original voice; higher values mimic the original more closely.
+    #style=0.5,              # Amplifies the style of the original speaker; consumes more computational resources.
+    #use_speaker_boost=True, # Enhances similarity to the original speaker; may increase latency.
+    speed=0.7               # Controls the speech speed; range is 0.7 (slower) to 1.2 (faster), with 1.0 being default.
+)
+
 
 
 def eleven_tts(text):
@@ -208,8 +217,11 @@ def eleven_tts(text):
     # Generate the audio using ElevenLabs API
     audio = elev.generate(
         text=text,
-        voice="x959FyxFeswkQQqFjoPb",
-        model="eleven_multilingual_v2"
+        voice=Voice(
+            voice_id="x959FyxFeswkQQqFjoPb",
+            settings=voice_settings
+        ),
+        model="eleven_multilingual_v2",
     )
     save(audio, "output.wav")
     #adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=2, speed_factor=1)
