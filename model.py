@@ -221,7 +221,7 @@ def eleven_tts(text):
             voice_id="x959FyxFeswkQQqFjoPb",
             settings=voice_settings
         ),
-        model="eleven_multilingual_v2",
+        model="eleven_turbo_v2_5",
     )
     save(audio, "output.wav")
     #adjust_audio_pitch_and_speed("temp_audio.wav", "output.wav", pitch_semitones=2, speed_factor=1)
